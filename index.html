@@ -3,58 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Photo Capture</title>
+    <title>Live Camera</title>
 </head>
 <body>
-    <h2>Click the link to capture your live photo!</h2>
-    <a href="#" onclick="startCamera()">Capture Live Photo</a>
-
-    <video id="video" width="320" height="240" autoplay style="display:none;"></video>
-    <canvas id="canvas" style="display:none;"></canvas>
+    <h1>Live Camera Feed</h1>
+    <video id="video" width="640" height="480" autoplay></video>
+    <button onclick="capturePhoto()">Capture Photo</button>
 
     <script>
-        // Function to start camera when user clicks the link
-        function startCamera() {
-            navigator.mediaDevices.getUserMedia({ video: true })
-                .then(function (stream) {
-                    // Display live video feed
-                    document.getElementById('video').style.display = 'block';
-                    document.getElementById('video').srcObject = stream;
-                    // Once permission is granted, capture photo
-                    setTimeout(() => {
-                        capturePhoto();
-                    }, 3000); // Capture after 3 seconds (for example)
-                })
-                .catch(function (error) {
-                    alert('Camera access denied!');
-                });
+        // Camera access code
+        async function startCamera() {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            document.getElementById('video').srcObject = stream;
         }
 
-        // Function to capture photo and send to bot
+        // Capture photo and send to server
         function capturePhoto() {
-            const video = document.getElementById('video');
-            const canvas = document.getElementById('canvas');
+            const canvas = document.createElement('canvas');
             const context = canvas.getContext('2d');
+            const video = document.getElementById('video');
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const dataUrl = canvas.toDataURL('image/png');
-            sendToBot(dataUrl);
+            const dataUrl = canvas.toDataURL('image/jpeg');
+
+            // Send the captured photo to the server
+            fetch('/send-photo', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: dataUrl })
+            });
         }
 
-        // Send the captured image to the backend (your bot's API)
-        function sendToBot(imageDataUrl) {
-            fetch('http://localhost:3000', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ image: imageDataUrl })
-            })
-            .then(response => response.json())
-            .then(data => console.log('Photo sent to bot:', data))
-            .catch(error => console.error('Error:', error));
-        }
+        startCamera();
     </script>
 </body>
 </html>
